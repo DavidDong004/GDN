@@ -107,7 +107,8 @@ class GraphLayer(MessagePassing):
 
 
         alpha = F.leaky_relu(alpha, self.negative_slope)
-        alpha = softmax(alpha, edge_index_i, size_i)
+        self.node_dim=0
+        alpha = softmax(alpha, edge_index_i, num_nodes=size_i)
 
         if return_attention_weights:
             self.__alpha__ = alpha
