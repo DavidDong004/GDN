@@ -20,37 +20,37 @@ from util.preprocess import *
 
 def test(model, dataloader):
     # test
-    loss_func = nn.MSELoss(reduction='mean')
-    device = get_device()
+    loss_func = nn.MSELoss(reduction='mean') #损失函数
+    device = get_device() #获取设备信息
 
-    test_loss_list = []
-    now = time.time()
+    test_loss_list = []#存储测试样本损失值
+    now = time.time()#获取时间
 
     test_predicted_list = []
     test_ground_list = []
-    test_labels_list = []
+    test_labels_list = []#存储测试结果
 
     t_test_predicted_list = []
     t_test_ground_list = []
-    t_test_labels_list = []
+    t_test_labels_list = []#存储每个批次的测试结果
 
-    test_len = len(dataloader)
+    test_len = len(dataloader)#获取dataloader长度（其实就是x的长度）
 
-    model.eval()
+    model.eval()#设置模型为评估模式
 
     i = 0
     acu_loss = 0
     for x, y, labels, edge_index in dataloader:
-        x, y, labels, edge_index = [item.to(device).float() for item in [x, y, labels, edge_index]]
+        x, y, labels, edge_index = [item.to(device).float() for item in [x, y, labels, edge_index]] #项数据传入给设备
         
-        with torch.no_grad():
-            predicted = model(x, edge_index).float().to(device)
+        with torch.no_grad():#禁用梯度计算
+            predicted = model(x, edge_index).float().to(device)  #计算预测值
             
             
-            loss = loss_func(predicted, y)
+            loss = loss_func(predicted, y) #计算损失值
             
 
-            labels = labels.unsqueeze(1).repeat(1, predicted.shape[1])
+            labels = labels.unsqueeze(1).repeat(1, predicted.shape[1]) #对label进行变形，使其与batch_num x noden_num 相吻合
 
             if len(t_test_predicted_list) <= 0:
                 t_test_predicted_list = predicted

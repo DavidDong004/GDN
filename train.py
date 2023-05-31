@@ -18,8 +18,8 @@ from scipy.stats import iqr
 
 
 def loss_func(y_pred, y_true):
-    loss = F.mse_loss(y_pred, y_true, reduction='mean')
-
+    loss = F.mse_loss(y_pred, y_true, reduction='mean') #损失函数使用mse损失函数
+    #loss = F.smooth_l1_loss(y_pred, y_true, reduction='mean',beta = 2.0) #损失函数使用Huber损失函数
     return loss
 
 
@@ -28,7 +28,7 @@ def train(model = None, save_path = '', config={},  train_dataloader=None, val_d
 
     seed = config['seed']
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=config['decay'])
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=config['decay'])#优化器使用Adam优化器
 
     now = time.time()
     
@@ -46,7 +46,7 @@ def train(model = None, save_path = '', config={},  train_dataloader=None, val_d
 
     i = 0
     epoch = config['epoch']
-    early_stop_win = 15
+    early_stop_win = 15#配置训练参数（早停）
 
     model.train()
 
@@ -63,18 +63,18 @@ def train(model = None, save_path = '', config={},  train_dataloader=None, val_d
         for x, labels, attack_labels, edge_index in dataloader:
             _start = time.time()
 
-            x, labels, edge_index = [item.float().to(device) for item in [x, labels, edge_index]]
+            x, labels, edge_index = [item.float().to(device) for item in [x, labels, edge_index]] #将数据转化为训练设备可用的数据，将数据转到设备上
 
-            optimizer.zero_grad()
-            out = model(x, edge_index).float().to(device)
-            loss = loss_func(out, labels)
+            optimizer.zero_grad()#清空梯度
+            out = model(x, edge_index).float().to(device)#训练模型
+            loss = loss_func(out, labels)#计算损失函数
             
-            loss.backward()
+            loss.backward()#反向传播计算梯度
             optimizer.step()
 
             
             train_loss_list.append(loss.item())
-            acu_loss += loss.item()
+            acu_loss += loss.item()#统计损失函数变化
                 
             i += 1
 
@@ -85,7 +85,7 @@ def train(model = None, save_path = '', config={},  train_dataloader=None, val_d
                         acu_loss/len(dataloader), acu_loss), flush=True
             )
 
-        # use val dataset to judge
+        # use val dataset to judge使用验证数据集判断是否保存模型参数
         if val_dataloader is not None:
 
             val_loss, val_result = test(model, val_dataloader)

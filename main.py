@@ -36,57 +36,57 @@ import random
 class Main():
     def __init__(self, train_config, env_config, debug=False):
 
-        self.train_config = train_config
-        self.env_config = env_config
-        self.datestr = None
+        self.train_config = train_config #传递训练参数
+        self.env_config = env_config #传递环境参数
+        self.datestr = None #数据指针
 
         dataset = self.env_config['dataset'] 
         train_orig = pd.read_csv(f'./data/{dataset}/train.csv', sep=',', index_col=0)
-        test_orig = pd.read_csv(f'./data/{dataset}/test.csv', sep=',', index_col=0)
+        test_orig = pd.read_csv(f'./data/{dataset}/test.csv', sep=',', index_col=0) #读取数据
        
-        train, test = train_orig, test_orig
+        train, test = train_orig, test_orig #数据赋值
 
         if 'attack' in train.columns:
-            train = train.drop(columns=['attack'])
+            train = train.drop(columns=['attack']) #去掉标签，将其视为无监督学习
 
-        feature_map = get_feature_map(dataset)
-        fc_struc = get_fc_graph_struc(dataset)
+        feature_map = get_feature_map(dataset) #获取标签数据/获取存在的多元时间序列每个序列的名称的list
+        fc_struc = get_fc_graph_struc(dataset) #构建连接关系，一个序列对一个序列的连接关系
 
         set_device(env_config['device'])
-        self.device = get_device()
+        self.device = get_device() #测试使用，检测使用设备(GPU/CPU)
 
-        fc_edge_index = build_loc_net(fc_struc, list(train.columns), feature_map=feature_map)
-        fc_edge_index = torch.tensor(fc_edge_index, dtype = torch.long)
+        fc_edge_index = build_loc_net(fc_struc, list(train.columns), feature_map=feature_map) #建图，根据上文提取的标签数据和连接关系
+        fc_edge_index = torch.tensor(fc_edge_index, dtype = torch.long) #加入torch(2xnx(n-1)) 第0行是每个结点的联写节点，第一行是每个结点
 
         self.feature_map = feature_map
 
-        train_dataset_indata = construct_data(train, feature_map, labels=0)
-        test_dataset_indata = construct_data(test, feature_map, labels=test.attack.tolist())
+        train_dataset_indata = construct_data(train, feature_map, labels=0)#构建训练数据集（零监督）将原始数据集变成n+1行t列的数据，最后一行为异常标签
+        test_dataset_indata = construct_data(test, feature_map, labels=test.attack.tolist())#构建测试数据集
 
 
         cfg = {
             'slide_win': train_config['slide_win'],
             'slide_stride': train_config['slide_stride'],
-        }
+        } #时序数据参数
 
-        train_dataset = TimeDataset(train_dataset_indata, fc_edge_index, mode='train', config=cfg)
-        test_dataset = TimeDataset(test_dataset_indata, fc_edge_index, mode='test', config=cfg)
+        train_dataset = TimeDataset(train_dataset_indata, fc_edge_index, mode='train', config=cfg) #将数据根据相关参数(win大小 stride长度)和现有特征连接图对数据进行处理，变为数据为这个包括三部分，训练数据x为win X个数，预测数据y为训练数据个数，异常标签label
+        test_dataset = TimeDataset(test_dataset_indata, fc_edge_index, mode='test', config=cfg)#将数据根据相关参数(win大小 stride长度)和现有特征连接图对数据进行处理
 
 
-        train_dataloader, val_dataloader = self.get_loaders(train_dataset, train_config['seed'], train_config['batch'], val_ratio = train_config['val_ratio'])
+        train_dataloader, val_dataloader = self.get_loaders(train_dataset, train_config['seed'], train_config['batch'], val_ratio = train_config['val_ratio']) #将训练数据集变为训练与验证数据集，并进行切片
 
         self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
+        self.test_dataset = test_dataset #载入已经处理后的数据（将原始数据分割为x（用来预测的数据），y(预测数据),，label(数据异常标记)）
 
 
-        self.train_dataloader = train_dataloader
-        self.val_dataloader = val_dataloader
+        self.train_dataloader = train_dataloader 
+        self.val_dataloader = val_dataloader #将加载后的数据进类
         self.test_dataloader = DataLoader(test_dataset, batch_size=train_config['batch'],
-                            shuffle=False, num_workers=0)
+                            shuffle=False, num_workers=0) #将测试数据集按batch进行划分
 
 
         edge_index_sets = []
-        edge_index_sets.append(fc_edge_index)
+        edge_index_sets.append(fc_edge_index) #节点与节点之间的连间关系（首先假设都有关系）对长度进行了压缩，将原本为2xnx（n-1）的数组变成了1维的list，这就是为什么要用append
 
         self.model = GDN(edge_index_sets, len(feature_map), 
                 dim=train_config['dim'], 
@@ -94,7 +94,7 @@ class Main():
                 out_layer_num=train_config['out_layer_num'],
                 out_layer_inter_dim=train_config['out_layer_inter_dim'],
                 topk=train_config['topk']
-            ).to(self.device)
+            ).to(self.device)#将数据导入GDN模型中（包括连接关系和参数，这得进去看）
 
 
 
@@ -103,7 +103,7 @@ class Main():
         if len(self.env_config['load_model_path']) > 0:
             model_save_path = self.env_config['load_model_path']
         else:
-            model_save_path = self.get_save_path()[0]
+            model_save_path = self.get_save_path()[0]#对训练模型进行存储
 
             self.train_log = train(self.model, model_save_path, 
                 config = train_config,
@@ -114,29 +114,29 @@ class Main():
                 test_dataset=self.test_dataset,
                 train_dataset=self.train_dataset,
                 dataset_name=self.env_config['dataset']
-            )
+            ) #训练模型
         
         # test            
         self.model.load_state_dict(torch.load(model_save_path))
-        best_model = self.model.to(self.device)
+        best_model = self.model.to(self.device) #对模型进行读取
 
         _, self.test_result = test(best_model, self.test_dataloader)
-        _, self.val_result = test(best_model, self.val_dataloader)
+        _, self.val_result = test(best_model, self.val_dataloader) #对预测阶段进行评估
 
-        self.get_score(self.test_result, self.val_result)
+        self.get_score(self.test_result, self.val_result) #获取异常分数
 
-    def get_loaders(self, train_dataset, seed, batch, val_ratio=0.1):
-        dataset_len = int(len(train_dataset))
-        train_use_len = int(dataset_len * (1 - val_ratio))
-        val_use_len = int(dataset_len * val_ratio)
-        val_start_index = random.randrange(train_use_len)
-        indices = torch.arange(dataset_len)
+    def get_loaders(self, train_dataset, seed, batch, val_ratio=0.1): #创建训练集和验证集
+        dataset_len = int(len(train_dataset)) #计算数据集长度
+        train_use_len = int(dataset_len * (1 - val_ratio))#计算训练集长度
+        val_use_len = int(dataset_len * val_ratio) #计算验证集长度
+        val_start_index = random.randrange(train_use_len) #随机选择验证集起始索引
+        indices = torch.arange(dataset_len)#创建索引张量
 
-        train_sub_indices = torch.cat([indices[:val_start_index], indices[val_start_index+val_use_len:]])
-        train_subset = Subset(train_dataset, train_sub_indices)
+        train_sub_indices = torch.cat([indices[:val_start_index], indices[val_start_index+val_use_len:]])#训练索引子数据集切片，合并训练集长度
+        train_subset = Subset(train_dataset, train_sub_indices)#给训练数据集作切片
 
-        val_sub_indices = indices[val_start_index:val_start_index+val_use_len]
-        val_subset = Subset(train_dataset, val_sub_indices)
+        val_sub_indices = indices[val_start_index:val_start_index+val_use_len] #验证子数据集索引
+        val_subset = Subset(train_dataset, val_sub_indices)#给验证数据集切片
 
 
         train_dataloader = DataLoader(train_subset, batch_size=batch,
@@ -145,20 +145,20 @@ class Main():
         val_dataloader = DataLoader(val_subset, batch_size=batch,
                                 shuffle=False)
 
-        return train_dataloader, val_dataloader
+        return train_dataloader, val_dataloader 
 
-    def get_score(self, test_result, val_result):
+    def get_score(self, test_result, val_result):#获取模型的性能指标
 
-        feature_num = len(test_result[0][0])
-        np_test_result = np.array(test_result)
-        np_val_result = np.array(val_result)
+        feature_num = len(test_result[0][0]) #节点数
+        np_test_result = np.array(test_result) #测试数据
+        np_val_result = np.array(val_result) #验证数据
 
-        test_labels = np_test_result[2, :, 0].tolist()
+        test_labels = np_test_result[2, :, 0].tolist() #获取测试数据标签
     
         test_scores, normal_scores = get_full_err_scores(test_result, val_result)
 
-        top1_best_info = get_best_performance_data(test_scores, test_labels, topk=1) 
-        top1_val_info = get_val_performance_data(test_scores, normal_scores, test_labels, topk=1)
+        top1_best_info = get_best_performance_data(test_scores, test_labels, topk=1)  #获取测试集最佳指标
+        top1_val_info = get_val_performance_data(test_scores, normal_scores, test_labels, topk=1) #获取验证集最佳指标
 
 
         print('=========================** Result **============================\n')
@@ -171,10 +171,11 @@ class Main():
 
         print(f'F1 score: {info[0]}')
         print(f'precision: {info[1]}')
-        print(f'recall: {info[2]}\n')
+        print(f'recall: {info[2]}') #打印结果
+        print(f'auc:{info[3]}')
+        print(f"thresold:{info[4]}\n")
 
-
-    def get_save_path(self, feature_name=''):
+    def get_save_path(self, feature_name=''):#存储模型
 
         dir_path = self.env_config['save_path']
         

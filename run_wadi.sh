@@ -9,7 +9,7 @@ out_layer_num=2
 SLIDE_STRIDE=1
 topk=30
 out_layer_inter_dim=256
-val_ratio=0.3
+val_ratio=0.02
 decay=0
 
 

@@ -68,48 +68,48 @@ def construct_data(data, feature_map, labels=0):
     res = []
 
     for feature in feature_map:
-        if feature in data.columns:
+        if feature in data.columns:#将数据根据特征标签加入res并转换成列表
             res.append(data.loc[:, feature].values.tolist())
         else:
             print(feature, 'not exist in data')
     # append labels as last
-    sample_n = len(res[0])
+    sample_n = len(res[0]) #读取时间序列长度t
 
-    if type(labels) == int:
+    if type(labels) == int:#根据情况（是否是有监督）
         res.append([labels]*sample_n)
     elif len(labels) == sample_n:
         res.append(labels)
 
     return res
 
-def build_loc_net(struc, all_features, feature_map=[]):
+def build_loc_net(struc, all_features, feature_map=[]): #输入： 图的连接关系、所有图上的节点/特征及其连接关系、图上的特征
 
     index_feature_map = feature_map
     edge_indexes = [
         [],
         []
     ]
-    for node_name, node_list in struc.items():
-        if node_name not in all_features:
+    for node_name, node_list in struc.items(): #将多元时间序列中的节点关系连接进行循环
+        if node_name not in all_features: #以防万一没有提取到所有特征，这边应该是一个补充
             continue
 
         if node_name not in index_feature_map:
-            index_feature_map.append(node_name)
+            index_feature_map.append(node_name) #这边应该也是由于特征提取不全做的一个补充操作，最后以struc的节点为准
         
-        p_index = index_feature_map.index(node_name)
-        for child in node_list:
-            if child not in all_features:
+        p_index = index_feature_map.index(node_name) #找到node_name在index_feature_map中的索引位置
+        for child in node_list: 
+            if child not in all_features:#检查nodelist是否包含了全部特征
                 continue
 
             if child not in index_feature_map:
-                print(f'error: {child} not in index_feature_map')
+                print(f'error: {child} not in index_feature_map')#检查nodelist是否包含了全部节点
                 # index_feature_map.append(child)
 
-            c_index = index_feature_map.index(child)
+            c_index = index_feature_map.index(child) #对于每个子（连接）节点输出其在map中的索引
             # edge_indexes[0].append(p_index)
             # edge_indexes[1].append(c_index)
-            edge_indexes[0].append(c_index)
-            edge_indexes[1].append(p_index)
+            edge_indexes[0].append(c_index) #返回的第一部分是子连接的索引 nx(n-1)
+            edge_indexes[1].append(p_index) #返回的第二部分是每个dot的索引nx(x-1)
         
 
     

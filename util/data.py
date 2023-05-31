@@ -26,24 +26,24 @@ def get_attack_interval(attack):
 
 # calculate F1 scores
 def eval_scores(scores, true_scores, th_steps, return_thresold=False):
-    padding_list = [0]*(len(true_scores) - len(scores))
+    padding_list = [0]*(len(true_scores) - len(scores)) #用于填补空缺的padding
     # print(padding_list)
 
     if len(padding_list) > 0:
         scores = padding_list + scores
 
-    scores_sorted = rankdata(scores, method='ordinal')
+    scores_sorted = rankdata(scores, method='ordinal') #对获取的差值向量进行排序，从小到大输出下标
     th_steps = th_steps
     # th_steps = 500
-    th_vals = np.array(range(th_steps)) * 1.0 / th_steps
+    th_vals = np.array(range(th_steps)) * 1.0 / th_steps #阈值列表
     fmeas = [None] * th_steps
     thresholds = [None] * th_steps
     for i in range(th_steps):
-        cur_pred = scores_sorted > th_vals[i] * len(scores)
+        cur_pred = scores_sorted > th_vals[i] * len(scores) #这应该是计算预测的值，而不是返回的是差值向量？好像有点问题这句话
 
-        fmeas[i] = f1_score(true_scores, cur_pred)
+        fmeas[i] = f1_score(true_scores, cur_pred) #计算f1分数
 
-        score_index = scores_sorted.tolist().index(int(th_vals[i] * len(scores)+1))
+        score_index = scores_sorted.tolist().index(int(th_vals[i] * len(scores)+1)) 
         thresholds[i] = scores[score_index]
 
     if return_thresold:
@@ -72,12 +72,12 @@ def eval_mseloss(predicted, ground_truth):
 
     return loss
 
-def get_err_median_and_iqr(predicted, groundtruth):
+def get_err_median_and_iqr(predicted, groundtruth): #获取预测值的误差中位数和iqr2
 
-    np_arr = np.abs(np.subtract(np.array(predicted), np.array(groundtruth)))
+    np_arr = np.abs(np.subtract(np.array(predicted), np.array(groundtruth))) #获取预测误差
 
-    err_median = np.median(np_arr)
-    err_iqr = iqr(np_arr)
+    err_median = np.median(np_arr) #获取预测误差中位数
+    err_iqr = iqr(np_arr) #获取iqr
 
     return err_median, err_iqr
 
