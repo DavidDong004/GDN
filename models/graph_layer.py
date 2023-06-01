@@ -22,7 +22,7 @@ class GraphLayer(MessagePassing):
 
         self.__alpha__ = None
 
-        self.lin = Linear(in_channels, heads * out_channels, bias=False) #线性变换层./cfw --no-sandbox./cfw --no-sandbox
+        self.lin = Linear(in_channels, heads * out_channels, bias=False) #线性变换层
 
         self.att_i = Parameter(torch.Tensor(1, heads, out_channels))
         self.att_j = Parameter(torch.Tensor(1, heads, out_channels))
@@ -60,21 +60,21 @@ class GraphLayer(MessagePassing):
 
         edge_index, _ = remove_self_loops(edge_index)  #去除连接中包含的自环边 
         edge_index, _ = add_self_loops(edge_index,
-                                       num_nodes=x[1].size(self.node_dim))
+                                       num_nodes=x[1].size(self.node_dim)) #在连接中根据节点数量添加自环边
 
         out = self.propagate(edge_index, x=x, embedding=embedding, edges=edge_index,
-                             return_attention_weights=return_attention_weights)
+                             return_attention_weights=return_attention_weights) #使用消息传递机制更新节点（调用messgae）
 
         if self.concat:
-            out = out.view(-1, self.heads * self.out_channels)
+            out = out.view(-1, self.heads * self.out_channels) #将out转换为形状为batch_size,head*out_channels形状
         else:
-            out = out.mean(dim=1)
+            out = out.mean(dim=1) #求在第一个维度上均值
 
-        if self.bias is not None:
+        if self.bias is not None: #加入偏置
             out = out + self.bias
 
         if return_attention_weights:
-            alpha, self.__alpha__ = self.__alpha__, None
+            alpha, self.__alpha__ = self.__alpha__, None #清空注意力权重并返回
             return out, (edge_index, alpha)
         else:
             return out
@@ -82,10 +82,10 @@ class GraphLayer(MessagePassing):
     def message(self, x_i, x_j, edge_index_i, size_i,
                 embedding,
                 edges,
-                return_attention_weights):
+                return_attention_weights): #消息传递机制更新节点
 
-        x_i = x_i.view(-1, self.heads, self.out_channels)
-        x_j = x_j.view(-1, self.heads, self.out_channels)
+        x_i = x_i.view(-1, self.heads, self.out_channels) 
+        x_j = x_j.view(-1, self.heads, self.out_channels) #修改多头注意力机制，将其作为第二个维度？
 
         if embedding is not None:
             embedding_i, embedding_j = embedding[edge_index_i], embedding[edges[0]]

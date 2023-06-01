@@ -20,7 +20,8 @@ from util.preprocess import *
 
 def test(model, dataloader):
     # test
-    loss_func = nn.MSELoss(reduction='mean') #损失函数
+   # loss_func = nn.MSELoss(reduction='mean') #损失函数MSE
+    loss_func=nn.SmoothL1Loss(reduction='mean',beta = 1.0) #损失函数Huber
     device = get_device() #获取设备信息
 
     test_loss_list = []#存储测试样本损失值

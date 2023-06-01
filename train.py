@@ -18,8 +18,8 @@ from scipy.stats import iqr
 
 
 def loss_func(y_pred, y_true):
-    loss = F.mse_loss(y_pred, y_true, reduction='mean') #损失函数使用mse损失函数
-    #loss = F.smooth_l1_loss(y_pred, y_true, reduction='mean',beta = 2.0) #损失函数使用Huber损失函数
+    #loss = F.mse_loss(y_pred, y_true, reduction='mean') #损失函数使用mse损失函数
+    loss = F.smooth_l1_loss(y_pred, y_true, reduction='mean',beta = 1.0) #损失函数使用Huber损失函数
     return loss
 
 
