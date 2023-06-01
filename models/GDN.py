@@ -76,7 +76,7 @@ class GNNLayer(nn.Module):
   
         out = self.bn(out) #批量归一化
         
-        return self.relu(out) #使用relu激活函数,原文中公式(5)
+        return self.relu(out) #使用relu激活函数,原文中公式(5) 外壳
 
 
 class GDN(nn.Module):
@@ -149,12 +149,12 @@ class GDN(nn.Module):
 
             cos_ji_mat = torch.matmul(weights, weights.T) #计算根据embed而生成的结点之间的相似性，这里用的是cos相似性？
             normed_mat = torch.matmul(weights.norm(dim=-1).view(-1,1), weights.norm(dim=-1).view(1,-1)) #计算节点表示向量的归一化矩阵
-            cos_ji_mat = cos_ji_mat / normed_mat #对节点相似性的关系进行归一化
+            cos_ji_mat = cos_ji_mat / normed_mat #对节点相似性的关系进行归一化,原文中公式（2）
 
             dim = weights.shape[-1] #检查embeding后的值的维度（embeding）
             topk_num = self.topk #取前k个关系
 
-            topk_indices_ji = torch.topk(cos_ji_mat, topk_num, dim=-1)[1]#这里取得为前k个关系，获取topk在原数组的标号，其实是k-1个
+            topk_indices_ji = torch.topk(cos_ji_mat, topk_num, dim=-1)[1]#这里取得为前k个关系，获取topk在原数组的标号，其实是k-1个原文中公式(3)
 
             self.learned_graph = topk_indices_ji #保存学习的图结构
 
