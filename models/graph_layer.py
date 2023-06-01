@@ -10,7 +10,7 @@ import math
 
 class GraphLayer(MessagePassing):
     def __init__(self, in_channels, out_channels, heads=1, concat=True,
-                 negative_slope=0.2, dropout=0, bias=True, inter_dim=-1,**kwargs):
+                 negative_slope=0.2, dropout=0, bias=True, inter_dim=-1,**kwargs): #in/out_channels为输入输出通道数，head为多头注意力机制头数
         super(GraphLayer, self).__init__(aggr='add', **kwargs)
 
         self.in_channels = in_channels
@@ -22,19 +22,19 @@ class GraphLayer(MessagePassing):
 
         self.__alpha__ = None
 
-        self.lin = Linear(in_channels, heads * out_channels, bias=False)
+        self.lin = Linear(in_channels, heads * out_channels, bias=False) #线性变换层./cfw --no-sandbox./cfw --no-sandbox
 
         self.att_i = Parameter(torch.Tensor(1, heads, out_channels))
         self.att_j = Parameter(torch.Tensor(1, heads, out_channels))
         self.att_em_i = Parameter(torch.Tensor(1, heads, out_channels))
-        self.att_em_j = Parameter(torch.Tensor(1, heads, out_channels))
+        self.att_em_j = Parameter(torch.Tensor(1, heads, out_channels)) #注意力权重参数
 
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
         elif bias and not concat:
             self.bias = Parameter(torch.Tensor(out_channels))
         else:
-            self.register_parameter('bias', None)
+            self.register_parameter('bias', None) #根据设置（是否有偏置和拼接）确定偏置参数
 
         self.reset_parameters()
 
@@ -46,11 +46,11 @@ class GraphLayer(MessagePassing):
         zeros(self.att_em_i)
         zeros(self.att_em_j)
 
-        zeros(self.bias)
+        zeros(self.bias) #初始化参数
 
 
 
-    def forward(self, x, edge_index, embedding, return_attention_weights=False):
+    def forward(self, x, edge_index, embedding, return_attention_weights=False): #前向传播函数
         """"""
         if torch.is_tensor(x):
             x = self.lin(x)
@@ -58,7 +58,7 @@ class GraphLayer(MessagePassing):
         else:
             x = (self.lin(x[0]), self.lin(x[1]))
 
-        edge_index, _ = remove_self_loops(edge_index)
+        edge_index, _ = remove_self_loops(edge_index)  #去除连接中包含的自环边 
         edge_index, _ = add_self_loops(edge_index,
                                        num_nodes=x[1].size(self.node_dim))
 
